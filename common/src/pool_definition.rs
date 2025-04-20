@@ -1,13 +1,21 @@
+use std::{fs, path::PathBuf};
+
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PoolDefinition {
+    pub name: String,
+    pub series: String,
+    pub prepare: Vec<String>,
     pub pool_size: u32,
     pub live_count: u32,
 }
 
 impl PoolDefinition {
-    pub fn new(pool_size: u32, live_count: u32) -> Self {
-        PoolDefinition { pool_size, live_count }
+    pub fn from_file(path: PathBuf) -> Result<Self> {
+        let raw: String = fs::read_to_string(path)?;
+        let definition: PoolDefinition = serde_yaml::from_str(&raw)?;
+        Ok(definition)
     }
 }
