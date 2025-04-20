@@ -33,9 +33,15 @@ fn handle_root(root_daemon: &mut LinuxPoolDaemon) -> Result<()> {
 
 fn handle_client(client_daemon: &mut LinuxPoolDaemon) -> Result<()> {
     loop {
-        let message: Message = client_daemon.listen_for_message()?;
+        let message: Result<Message> = client_daemon.listen_for_message();
+
+        if let Err(_) = message {
+            return Ok(());
+        }
+
+        let message: Message = message.unwrap();
     
-        let next_action = match message.clone() {
+        let next_action: NextAction = match message.clone() {
             Message::DefinePool(pool_definition) => {
                 store(&pool_definition.name, "pool-definitions", &pool_definition)?;
                 Ok(NextAction::Continue)
