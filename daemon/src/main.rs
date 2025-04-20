@@ -75,7 +75,7 @@ fn handle_client(client_daemon: &mut LinuxPoolDaemon) -> Result<()> {
 
 fn main() -> anyhow::Result<()> {    
     loop {
-        let mut root_daemon: Box<LinuxPoolDaemon> = Box::new(LinuxPoolDaemon::serve(ServeTarget::Root)?);
+        let mut root_daemon: LinuxPoolDaemon = LinuxPoolDaemon::serve(ServeTarget::Root)?;
         handle_root(&mut root_daemon)?;
     }
 }
