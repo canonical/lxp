@@ -6,10 +6,13 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PoolDefinition {
     pub name: String,
-    pub series: String,
-    pub prepare: Vec<String>,
-    pub pool_size: u32,
+
     pub live_count: u32,
+    pub pool_size: u32,
+
+    pub base: String,
+
+    pub prepare: Vec<String>,
 }
 
 impl PoolDefinition {

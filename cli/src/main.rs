@@ -12,6 +12,7 @@ use commands::{
 use lxp_daemon_connector::connector::LinuxPoolConnector;
 
 mod commands;
+mod pretty_formats;
 
 #[derive(Debug, Parser)]
 struct Cli {

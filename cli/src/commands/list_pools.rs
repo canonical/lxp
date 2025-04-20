@@ -2,10 +2,10 @@ use anyhow::Result;
 use lxp_common::pool_definition::PoolDefinition;
 use lxp_daemon_connector::connector::LinuxPoolConnector;
 
+use crate::pretty_formats::pool_definition::pool_definitions_as_table;
+
 pub fn run_command_list_pools(lxp: &mut LinuxPoolConnector) -> Result<()> {
     let pools: Vec<PoolDefinition> = lxp.list_pools()?;
-    for pool in pools {
-        println!("{}[{}:{}] ({})", pool.name, pool.live_count, pool.pool_size, pool.series);
-    }
+    println!("{}", pool_definitions_as_table(pools));
     Ok(())
 }

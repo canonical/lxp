@@ -11,6 +11,6 @@ pub struct GetPoolArgs {
 
 pub fn run_command_get_pool(lxp: &mut LinuxPoolConnector, args: GetPoolArgs) -> Result<()> {
     let pool: PoolDefinition = lxp.get_pool(args.pool_name)?;
-    println!("{}[{}:{}] ({})", pool.name, pool.live_count, pool.pool_size, pool.series);
+    println!("{}[{}:{}] ({})", pool.name, pool.live_count, pool.pool_size, pool.base);
     Ok(())
 }
