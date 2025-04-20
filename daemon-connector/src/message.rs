@@ -9,6 +9,10 @@ pub enum Message {
     Begin(ServeTarget),
 
     DefinePool(PoolDefinition),
+    ListPools,
+    ListPoolsResponse(Vec<PoolDefinition>),
+    GetPool(String),
+    GetPoolResponse(PoolDefinition),
 
     GrabMachine(PoolIdentifier),
     GrabMachineResponse(MachineIdentifier),

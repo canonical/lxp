@@ -1,7 +1,10 @@
 use anyhow::{anyhow, bail, Ok, Result};
-use lxp_common::machine_identifier::MachineIdentifier;
+use lxp_common::{machine_identifier::MachineIdentifier, pool_definition::PoolDefinition};
 use lxp_daemon_connector::{daemon::LinuxPoolDaemon, message::Message, serve_target::ServeTarget};
+use store::{list, retrieve, store};
 use uuid::Uuid;
+
+mod store;
 
 #[derive(Debug, PartialEq, Eq)]
 enum NextAction {
@@ -30,10 +33,21 @@ fn handle_root(root_daemon: &mut LinuxPoolDaemon) -> Result<()> {
 
 fn handle_client(client_daemon: &mut LinuxPoolDaemon) -> Result<()> {
     loop {
-        let message = client_daemon.listen_for_message()?;
+        let message: Message = client_daemon.listen_for_message()?;
     
         let next_action = match message.clone() {
             Message::DefinePool(pool_definition) => {
+                store(&pool_definition.name, "pool-definitions", &pool_definition)?;
+                Ok(NextAction::Continue)
+            },
+            Message::ListPools => {
+                let pools: Vec<PoolDefinition> = list("pool-definitions")?;
+                client_daemon.send_message(&Message::ListPoolsResponse(pools))?;
+                Ok(NextAction::Continue)
+            },
+            Message::GetPool(name) => {
+                let pool: PoolDefinition = retrieve(&name, "pool-definitions")?;
+                client_daemon.send_message(&Message::GetPoolResponse(pool))?;
                 Ok(NextAction::Continue)
             },
             Message::GrabMachine(pool_identifier) => {

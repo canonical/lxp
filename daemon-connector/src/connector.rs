@@ -1,6 +1,6 @@
 use std::{thread::sleep, time::Duration};
 
-use anyhow::Result;
+use anyhow::{bail, Result};
 
 use lxp_common::{machine_identifier::MachineIdentifier, pool_definition::PoolDefinition, pool_identifier::PoolIdentifier};
 
@@ -24,10 +24,24 @@ impl LinuxPoolConnector {
     }
 
     pub fn define_pool(&mut self, pool_definition: PoolDefinition) -> Result<()> {
-        self.daemon.send_message(&pool_definition.into())
+        self.daemon.send_message(&Message::DefinePool(pool_definition))
+    }
+
+    pub fn list_pools(&mut self) -> Result<Vec<PoolDefinition>> {
+        match self.daemon.send_request(&Message::ListPools)? {
+            Message::ListPoolsResponse(pools) => Ok(pools),
+            _ => bail!("Could not list pools"),
+        }
+    }
+
+    pub fn get_pool(&mut self, name: String) -> Result<PoolDefinition> {
+        match self.daemon.send_request(&Message::GetPool(name))? {
+            Message::GetPoolResponse(pool) => Ok(pool),
+            _ => bail!("Could not get pool"),
+        }
     }
 
     pub fn grab_machine(&mut self, pool_identifier: PoolIdentifier) -> Result<MachineIdentifier> {
-        self.daemon.send_request(&pool_identifier.into())?.try_into()
+        self.daemon.send_request(&Message::GrabMachine(pool_identifier))?.try_into()
     }
 }
