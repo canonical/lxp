@@ -1,26 +1,42 @@
-use std::path::PathBuf;
-
+use anyhow::Result;
+use clap::{
+    command,
+    Parser,
+    Subcommand
+};
+use commands::{
+    define_pool::{run_command_define_pool, DefinePoolArgs},
+    get_pool::{run_command_get_pool, GetPoolArgs},
+    list_pools::run_command_list_pools
+};
 use lxp_daemon_connector::connector::LinuxPoolConnector;
-use lxp_common::{machine_identifier::MachineIdentifier, pool_definition::PoolDefinition, pool_identifier::PoolIdentifier};
 
-fn main() -> anyhow::Result<()> {
+mod commands;
+
+#[derive(Debug, Parser)]
+struct Cli {
+    #[command(subcommand)]
+    command: Command,
+}
+
+#[derive(Debug, Subcommand)]
+enum Command {
+    #[command(about = "Update a pool definition")]
+    DefinePool(DefinePoolArgs),
+
+    #[command(about = "List all pools")]
+    Pools,
+
+    #[command(about = "Get specific pool")]
+    Pool(GetPoolArgs),
+}
+
+fn main() -> Result<()> {
     let mut lxp: LinuxPoolConnector = LinuxPoolConnector::connect()?;
-
-    let pool_definition_path: PathBuf = PathBuf::from("/home/thinking-dragon/source-wand.lxp.yaml");
-    lxp.define_pool(PoolDefinition::from_file(pool_definition_path)?)?;
-
-    let pools: Vec<PoolDefinition> = lxp.list_pools()?;
-    println!("Pools:");
-    for pool in pools {
-        println!("\t{}[{}:{}] ({})", pool.name, pool.live_count, pool.pool_size, pool.series);
+    
+    match Cli::parse().command {
+        Command::DefinePool(args) => run_command_define_pool(&mut lxp, args),
+        Command::Pools => run_command_list_pools(&mut lxp),
+        Command::Pool(args) => run_command_get_pool(&mut lxp, args),
     }
-
-    let pool: PoolDefinition = lxp.get_pool("source-wand".to_string())?;
-    println!("Pool \"source-wand\":");
-    println!("\t{}[{}:{}] ({})", pool.name, pool.live_count, pool.pool_size, pool.series);
-
-    let machine_id: MachineIdentifier = lxp.grab_machine(PoolIdentifier::new())?;
-    println!("{}", machine_id.to_string());
-
-    Ok(())
 }
