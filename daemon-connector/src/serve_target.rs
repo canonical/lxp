@@ -6,3 +6,9 @@ pub enum ServeTarget {
     Root,
     Client(String),
 }
+
+impl ServeTarget {
+    pub fn is_root(&self) -> bool {
+        self == &ServeTarget::Root
+    }
+}

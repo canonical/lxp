@@ -9,8 +9,8 @@ const MESSAGE_SIZE: usize = 1024;
 pub struct LinuxPoolDaemon {
     stream: UnixStream,
 
-    is_root: bool,
-    is_client: bool,
+    is_serving: bool,
+    target: ServeTarget,
 }
 
 impl LinuxPoolDaemon {
@@ -35,8 +35,8 @@ impl LinuxPoolDaemon {
                 Ok(
                     LinuxPoolDaemon {
                         stream,
-                        is_root: target == ServeTarget::Root,
-                        is_client: false,
+                        target,
+                        is_serving: true,
                     }
                 )
             },
@@ -58,8 +58,8 @@ impl LinuxPoolDaemon {
                 Ok(
                     LinuxPoolDaemon {
                         stream,
-                        is_root: target == ServeTarget::Root,
-                        is_client: true,
+                        target,
+                        is_serving: false,
                     }
                 )
             },
@@ -81,13 +81,6 @@ impl LinuxPoolDaemon {
     }
 
     fn write(&mut self, message: &Message) -> anyhow::Result<()> {
-        if self.is_root {
-            println!("[root] > {:?}", message);
-        }
-        else {
-            println!("> {:?}", message);
-        }
-
         let message: Vec<u8> = bincode::serialize(&message)?;
         let length: usize = message.len();
 
@@ -115,22 +108,27 @@ impl LinuxPoolDaemon {
         }
 
         let message = bincode::deserialize(&buffer[4..4 + length as usize])?;
-
-        if self.is_root {
-            println!("[root] < {:?}", message);
-        }
-        else {
-            println!("< {:?}", message);
-        }
-
         Ok(message)
     }
 }
 
 impl Drop for LinuxPoolDaemon {
     fn drop(&mut self) {
-        if !self.is_root && self.is_client {
+        if !(self.target.is_root() || self.is_serving) {
             self.write(&Message::End).ok();
+        }
+
+        if self.is_serving {
+            if let Some(home_directory) = dirs::home_dir() {
+                let socket_path: &PathBuf = match &self.target {
+                    ServeTarget::Root => &home_directory.join(PathBuf::from("lxp.socket")),
+                    ServeTarget::Client(file) => &home_directory.join(format!("lxp.{}.socket", file)),
+                };
+    
+                if std::fs::metadata(socket_path).is_ok() {
+                    std::fs::remove_file(socket_path).ok();
+                }
+            }
         }
     }
 }
