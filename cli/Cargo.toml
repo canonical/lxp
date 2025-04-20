@@ -1,0 +1,13 @@
+[package]
+name = "lxp"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.98"
+
+[dependencies.lxp-daemon-connector]
+path = "../daemon-connector"
+
+[dependencies.lxp-common]
+path = "../common"
