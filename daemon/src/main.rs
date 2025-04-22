@@ -1,10 +1,16 @@
+use std::collections::HashMap;
+
 use anyhow::{anyhow, bail, Ok, Result};
 use lxp_common::{machine_identifier::MachineIdentifier, pool_definition::PoolDefinition};
 use lxp_daemon_connector::{daemon::LinuxPoolDaemon, message::Message, serve_target::ServeTarget};
+use pool_manager::PoolManager;
 use store::{list, retrieve, store};
 use uuid::Uuid;
 
 mod store;
+mod pool_manager;
+mod lxd_machine;
+mod lxd_machine_status;
 
 #[derive(Debug, PartialEq, Eq)]
 enum NextAction {
@@ -12,7 +18,7 @@ enum NextAction {
     End,
 }
 
-fn handle_root(root_daemon: &mut LinuxPoolDaemon) -> Result<()> {
+fn handle_root(root_daemon: &mut LinuxPoolDaemon, pool_managers: &mut HashMap<String, PoolManager>) -> Result<()> {
     let message = root_daemon.listen_for_message()?;
 
     match message {
@@ -23,7 +29,7 @@ fn handle_root(root_daemon: &mut LinuxPoolDaemon) -> Result<()> {
             root_daemon.send_message(&Message::Begin(daemon_serve_target.clone()))?;
             let mut client_daemon: LinuxPoolDaemon = LinuxPoolDaemon::serve(daemon_serve_target)?;
 
-            handle_client(&mut client_daemon)?;
+            handle_client(&mut client_daemon, pool_managers)?;
         },
         _ => bail!("First message must be \"Initiate\""),
     }
@@ -31,7 +37,7 @@ fn handle_root(root_daemon: &mut LinuxPoolDaemon) -> Result<()> {
     Ok(())
 }
 
-fn handle_client(client_daemon: &mut LinuxPoolDaemon) -> Result<()> {
+fn handle_client(client_daemon: &mut LinuxPoolDaemon, pool_managers: &mut HashMap<String, PoolManager>) -> Result<()> {
     loop {
         let message: Result<Message> = client_daemon.listen_for_message();
 
@@ -73,9 +79,22 @@ fn handle_client(client_daemon: &mut LinuxPoolDaemon) -> Result<()> {
     }
 }
 
-fn main() -> anyhow::Result<()> {    
+fn manifest_pools() -> Result<HashMap<String, PoolManager>> {
+    let mut pool_managers: HashMap<String, PoolManager> = HashMap::new();
+
+    let pools: Vec<PoolDefinition> = list("pool-definitions")?;
+    for pool in pools {
+        pool_managers.insert(pool.name.clone(), PoolManager::new(pool)?);
+    }
+
+    Ok(pool_managers)
+}
+
+fn main() -> Result<()> {
+    let mut pool_managers: HashMap<String, PoolManager> = manifest_pools()?;
+
     loop {
         let mut root_daemon: LinuxPoolDaemon = LinuxPoolDaemon::serve(ServeTarget::Root)?;
-        handle_root(&mut root_daemon)?;
+        handle_root(&mut root_daemon, &mut pool_managers)?;
     }
 }
