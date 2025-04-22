@@ -6,6 +6,8 @@ use crate::pretty_formats::pool_definition::pool_definitions_as_table;
 
 pub fn run_command_list_pools(lxp: &mut LinuxPoolConnector) -> Result<()> {
     let pools: Vec<PoolDefinition> = lxp.list_pools()?;
+
     println!("{}", pool_definitions_as_table(pools));
+
     Ok(())
 }

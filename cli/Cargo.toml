@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.98"
 clap = { version = "4.5.37", features = ["derive"] }
+colorize = "0.1.0"
 tabled = "0.18.0"
 
 [dependencies.lxp-daemon-connector]

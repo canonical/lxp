@@ -13,6 +13,8 @@ pub struct DefinePoolArgs {
 
 pub fn run_command_define_pool(lxp: &mut LinuxPoolConnector, args: DefinePoolArgs) -> Result<()> {
     let pool_definition: PoolDefinition = PoolDefinition::from_file(args.pool_definition_file)?;
+
     lxp.define_pool(pool_definition)?;
+
     Ok(())
 }
