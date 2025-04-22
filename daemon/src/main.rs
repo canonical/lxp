@@ -1,14 +1,16 @@
-use std::collections::HashMap;
+use std::{sync::Arc, thread};
 
 use anyhow::{anyhow, bail, Ok, Result};
 use lxp_common::{machine_identifier::MachineIdentifier, pool_definition::PoolDefinition};
 use lxp_daemon_connector::{daemon::LinuxPoolDaemon, message::Message, serve_target::ServeTarget};
-use pool_manager::PoolManager;
+use pool_service::PoolService;
 use store::{list, retrieve, store};
+use tokio::{runtime::Runtime, sync::Mutex};
 use uuid::Uuid;
 
 mod store;
 mod pool_manager;
+mod pool_service;
 mod lxd_machine;
 mod lxd_machine_status;
 
@@ -18,7 +20,7 @@ enum NextAction {
     End,
 }
 
-fn handle_root(root_daemon: &mut LinuxPoolDaemon, pool_managers: &mut HashMap<String, PoolManager>) -> Result<()> {
+fn handle_root(root_daemon: &mut LinuxPoolDaemon, pool_service: &mut PoolService) -> Result<()> {
     let message = root_daemon.listen_for_message()?;
 
     match message {
@@ -29,7 +31,7 @@ fn handle_root(root_daemon: &mut LinuxPoolDaemon, pool_managers: &mut HashMap<St
             root_daemon.send_message(&Message::Begin(daemon_serve_target.clone()))?;
             let mut client_daemon: LinuxPoolDaemon = LinuxPoolDaemon::serve(daemon_serve_target)?;
 
-            handle_client(&mut client_daemon, pool_managers)?;
+            handle_client(&mut client_daemon, pool_service)?;
         },
         _ => bail!("First message must be \"Initiate\""),
     }
@@ -37,7 +39,7 @@ fn handle_root(root_daemon: &mut LinuxPoolDaemon, pool_managers: &mut HashMap<St
     Ok(())
 }
 
-fn handle_client(client_daemon: &mut LinuxPoolDaemon, pool_managers: &mut HashMap<String, PoolManager>) -> Result<()> {
+fn handle_client(client_daemon: &mut LinuxPoolDaemon, pool_service: &mut PoolService) -> Result<()> {
     loop {
         let message: Result<Message> = client_daemon.listen_for_message();
 
@@ -79,22 +81,14 @@ fn handle_client(client_daemon: &mut LinuxPoolDaemon, pool_managers: &mut HashMa
     }
 }
 
-fn manifest_pools() -> Result<HashMap<String, PoolManager>> {
-    let mut pool_managers: HashMap<String, PoolManager> = HashMap::new();
+#[tokio::main]
+async fn main() -> Result<()> {
+    let mut pool_service: PoolService = PoolService::new()?;
 
-    let pools: Vec<PoolDefinition> = list("pool-definitions")?;
-    for pool in pools {
-        pool_managers.insert(pool.name.clone(), PoolManager::new(pool)?);
-    }
-
-    Ok(pool_managers)
-}
-
-fn main() -> Result<()> {
-    let mut pool_managers: HashMap<String, PoolManager> = manifest_pools()?;
+    pool_service.manifest_pools();
 
     loop {
         let mut root_daemon: LinuxPoolDaemon = LinuxPoolDaemon::serve(ServeTarget::Root)?;
-        handle_root(&mut root_daemon, &mut pool_managers)?;
+        handle_root(&mut root_daemon, &mut pool_service)?;
     }
 }
