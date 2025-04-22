@@ -3,6 +3,8 @@ use std::{fs, path::PathBuf};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
+use crate::machine_type::MachineType;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PoolDefinition {
     pub name: String,
@@ -11,6 +13,7 @@ pub struct PoolDefinition {
     pub pool_size: u32,
 
     pub base: String,
+    pub machine_type: MachineType,
 
     pub prepare: Vec<String>,
 }
