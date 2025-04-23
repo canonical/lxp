@@ -54,6 +54,17 @@ impl PoolManager {
         Ok(machine_handle)
     }
 
+    pub fn execute_command(&self, machine: &MachineHandle, command: &String) -> Result<String> {
+        match self.machines.get(machine.index) {
+            Some(machine) => {
+                machine.retry_execute(command, EXEC_MAX_RETRIES, EXEC_TIMEOUT)
+            },
+            None => {
+                bail!("Machine \"{}\" not found, cannot execute command on it", machine.to_string())
+            },
+        }
+    }
+
     pub fn release_machine(&mut self, machine_handle: &MachineHandle) -> Result<()> {
         match self.machines.get(machine_handle.index) {
             Some(machine) => {

@@ -53,6 +53,18 @@ impl PoolService {
         }
     }
 
+    pub fn execute_command(&self, machine_handle: &MachineHandle, command: &String) -> Result<String> {
+        match self.pool_managers.lock().unwrap().get(&machine_handle.pool) {
+            Some(pool_manager) => {
+                let response: String = pool_manager.execute_command(machine_handle, command)?;
+                return Ok(response);
+            },
+            None => {
+                bail!("Could not execute command");
+            },
+        }
+    }
+
     pub fn release_machine(&self, machine_handle: &MachineHandle) -> Result<()> {
         match self.pool_managers.lock().unwrap().get_mut(&machine_handle.pool) {
             Some(pool_manager) => {

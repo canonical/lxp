@@ -68,6 +68,11 @@ fn handle_client(client_daemon: &mut LinuxPoolDaemon, pool_service: &mut PoolSer
                 client_daemon.send_message(&Message::GrabMachineResponse(machine))?;
                 Ok(NextAction::Continue)
             },
+            Message::ExecuteCommand(machine_handle, command) => {
+                let response: String = pool_service.execute_command(&machine_handle, &command)?;
+                client_daemon.send_message(&Message::ExecuteCommandResponse(response))?;
+                Ok(NextAction::Continue)
+            },
             Message::ReleaseMachine(machine) => {
                 pool_service.release_machine(&machine)?;
                 Ok(NextAction::Continue)

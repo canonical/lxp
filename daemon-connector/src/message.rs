@@ -16,6 +16,8 @@ pub enum Message {
 
     GrabMachine(String),
     GrabMachineResponse(MachineHandle),
+    ExecuteCommand(MachineHandle, String),
+    ExecuteCommandResponse(String),
     ReleaseMachine(MachineHandle),
 
     Error(String),

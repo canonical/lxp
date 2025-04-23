@@ -51,6 +51,14 @@ impl LinuxPoolConnector {
         }
     }
 
+    pub fn execute_command(&mut self, machine_handle: MachineHandle, command: String) -> Result<String> {
+        match self.daemon.send_request(&Message::ExecuteCommand(machine_handle, command))? {
+            Message::ExecuteCommandResponse(response) => Ok(response),
+            Message::Error(error) => bail!("{}", error),
+            _ => bail!("Could not execute command"),
+        }
+    }
+
     pub fn release_machine(&mut self, machine: MachineHandle) -> Result<()> {
         self.daemon.send_message(&Message::ReleaseMachine(machine))
     }
