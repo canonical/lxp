@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::{Arc, Mutex}};
 
-use anyhow::Result;
-use lxp_common::pool_definition::PoolDefinition;
+use anyhow::{bail, Result};
+use lxp_common::{machine_handle::MachineHandle, pool_definition::PoolDefinition};
 use tokio::runtime::Runtime;
 
 use crate::{pool_manager::PoolManager, store};
@@ -39,5 +39,29 @@ impl PoolService {
                 }
             }
         });
+    }
+
+    pub fn grab_machine(&self, pool: &String) -> Result<MachineHandle> {
+        match self.pool_managers.lock().unwrap().get_mut(pool) {
+            Some(pool_manager) => {
+                let machine: MachineHandle = pool_manager.grab_machine()?;
+                return Ok(machine);
+            },
+            None => {
+                bail!("Could not find pool \"{}\", make sure pool exists and daemon has completed pool manifestation", pool);
+            },
+        }
+    }
+
+    pub fn release_machine(&self, machine_handle: &MachineHandle) -> Result<()> {
+        match self.pool_managers.lock().unwrap().get_mut(&machine_handle.pool) {
+            Some(pool_manager) => {
+                pool_manager.release_machine(machine_handle)?;
+                return Ok(());
+            },
+            None => {
+                bail!("Could not find pool \"{}\", make sure pool exists and daemon has completed pool manifestation", machine_handle.pool);
+            },
+        }
     }
 }

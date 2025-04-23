@@ -6,7 +6,7 @@ use lxp_daemon_connector::connector::LinuxPoolConnector;
 
 #[derive(Debug, Parser)]
 pub struct GetPoolArgs {
-    #[arg(value_name = "NAME")]
+    #[arg(value_name = "POOL")]
     pool_name: String,
 }
 

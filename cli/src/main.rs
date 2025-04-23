@@ -5,9 +5,7 @@ use clap::{
     Subcommand
 };
 use commands::{
-    define_pool::{run_command_define_pool, DefinePoolArgs},
-    get_pool::{run_command_get_pool, GetPoolArgs},
-    list_pools::run_command_list_pools
+    define_pool::{run_command_define_pool, DefinePoolArgs}, get_pool::{run_command_get_pool, GetPoolArgs}, grab_machine::{run_command_grab_machine, GrabMachineArgs}, list_pools::run_command_list_pools
 };
 use lxp_daemon_connector::connector::LinuxPoolConnector;
 
@@ -30,6 +28,9 @@ enum Command {
 
     #[command(about = "Get specific pool")]
     Pool(GetPoolArgs),
+
+    #[command(about = "Grab machine from pool")]
+    GrabMachine(GrabMachineArgs),
 }
 
 fn main() -> Result<()> {
@@ -39,5 +40,6 @@ fn main() -> Result<()> {
         Command::DefinePool(args) => run_command_define_pool(&mut lxp, args),
         Command::Pools => run_command_list_pools(&mut lxp),
         Command::Pool(args) => run_command_get_pool(&mut lxp, args),
+        Command::GrabMachine(args) => run_command_grab_machine(&mut lxp, args),
     }
 }

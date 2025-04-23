@@ -1,11 +1,8 @@
-use std::{sync::Arc, thread};
-
 use anyhow::{anyhow, bail, Ok, Result};
-use lxp_common::{machine_identifier::MachineIdentifier, pool_definition::PoolDefinition};
+use lxp_common::{machine_handle::MachineHandle, pool_definition::PoolDefinition};
 use lxp_daemon_connector::{daemon::LinuxPoolDaemon, message::Message, serve_target::ServeTarget};
 use pool_service::PoolService;
 use store::{list, retrieve, store};
-use tokio::{runtime::Runtime, sync::Mutex};
 use uuid::Uuid;
 
 mod store;
@@ -31,7 +28,9 @@ fn handle_root(root_daemon: &mut LinuxPoolDaemon, pool_service: &mut PoolService
             root_daemon.send_message(&Message::Begin(daemon_serve_target.clone()))?;
             let mut client_daemon: LinuxPoolDaemon = LinuxPoolDaemon::serve(daemon_serve_target)?;
 
-            handle_client(&mut client_daemon, pool_service)?;
+            if let Err(error) = handle_client(&mut client_daemon, pool_service) {
+                client_daemon.send_message(&Message::Error(error.to_string()))?;
+            }
         },
         _ => bail!("First message must be \"Initiate\""),
     }
@@ -64,11 +63,15 @@ fn handle_client(client_daemon: &mut LinuxPoolDaemon, pool_service: &mut PoolSer
                 client_daemon.send_message(&Message::GetPoolResponse(pool))?;
                 Ok(NextAction::Continue)
             },
-            Message::GrabMachine(pool_identifier) => {
-                let machine_identifier: MachineIdentifier = MachineIdentifier::new(&pool_identifier);
-                client_daemon.send_message(&machine_identifier.into())?;
+            Message::GrabMachine(pool) => {
+                let machine: MachineHandle = pool_service.grab_machine(&pool)?;
+                client_daemon.send_message(&Message::GrabMachineResponse(machine))?;
                 Ok(NextAction::Continue)
             },
+            Message::ReleaseMachine(machine) => {
+                pool_service.release_machine(&machine)?;
+                Ok(NextAction::Continue)
+            }
             Message::End => Ok(NextAction::End),
             _ => {
                 Err(anyhow!("Invalid message sent to daemon"))

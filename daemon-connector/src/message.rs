@@ -1,4 +1,4 @@
-use lxp_common::{machine_identifier::MachineIdentifier, pool_definition::PoolDefinition, pool_identifier::PoolIdentifier};
+use lxp_common::{machine_handle::MachineHandle, pool_definition::PoolDefinition};
 use serde::{Deserialize, Serialize};
 
 use crate::serve_target::ServeTarget;
@@ -14,8 +14,11 @@ pub enum Message {
     GetPool(String),
     GetPoolResponse(PoolDefinition),
 
-    GrabMachine(PoolIdentifier),
-    GrabMachineResponse(MachineIdentifier),
+    GrabMachine(String),
+    GrabMachineResponse(MachineHandle),
+    ReleaseMachine(MachineHandle),
+
+    Error(String),
 
     End,
 }
