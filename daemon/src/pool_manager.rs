@@ -1,7 +1,7 @@
 use std::{collections::HashSet, time::Duration};
 
 use anyhow::{bail, Result};
-use lxp_common::{machine_handle::MachineHandle, pool_definition::PoolDefinition};
+use lxp_common::{lxp_status::{LxpMachineStatus, LxpPoolStatus}, machine_handle::MachineHandle, pool_definition::PoolDefinition};
 
 use crate::lxd_machine::LxdMachine;
 
@@ -88,6 +88,24 @@ impl PoolManager {
         self.machines_in_use.remove(machine_handle);
 
         Ok(())
+    }
+
+    pub fn status(&self) -> (LxpPoolStatus, Vec<LxpMachineStatus>) {
+        let pool_status: LxpPoolStatus = LxpPoolStatus::new(
+            self.pool_definition.name.clone(),
+            format!(
+                "{}/{}",
+                self.nb_machines_available(),
+                self.pool_definition.pool_size,
+            )
+        );
+        let mut unit_statuses: Vec<LxpMachineStatus> = Vec::new();
+
+        for machine in &self.machines {
+            unit_statuses.push(machine.status());
+        }
+
+        (pool_status, unit_statuses)
     }
 
     fn find_next_available_machine(&self) -> Result<MachineHandle> {

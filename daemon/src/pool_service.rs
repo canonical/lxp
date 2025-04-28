@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::{Arc, Mutex}};
 
 use anyhow::{bail, Result};
-use lxp_common::{machine_handle::MachineHandle, pool_definition::PoolDefinition};
+use lxp_common::{lxp_status::{LxpMachineStatus, LxpPoolStatus, LxpStatus}, machine_handle::MachineHandle, pool_definition::PoolDefinition};
 use tokio::runtime::Runtime;
 
 use crate::{pool_manager::PoolManager, store};
@@ -75,5 +75,20 @@ impl PoolService {
                 bail!("Could not find pool \"{}\", make sure pool exists and daemon has completed pool manifestation", machine_handle.pool);
             },
         }
+    }
+
+    pub fn status(&self) -> Result<LxpStatus> {
+        let mut pools: Vec<LxpPoolStatus> = Vec::new();
+        let mut units: Vec<LxpMachineStatus> = Vec::new();
+
+        for pool_manager in self.pool_managers.lock().unwrap().values_mut() {
+            let (pool_status, unit_statuses) = pool_manager.status();
+            pools.push(pool_status);
+            for unit_status in unit_statuses {
+                units.push(unit_status);
+            }
+        }
+
+        Ok(LxpStatus::new(pools, units))
     }
 }

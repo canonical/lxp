@@ -5,7 +5,7 @@ use clap::{
     Subcommand
 };
 use commands::{
-    define_pool::{run_command_define_pool, DefinePoolArgs}, get_pool::{run_command_get_pool, GetPoolArgs}, grab_machine::{run_command_grab_machine, GrabMachineArgs}, list_pools::run_command_list_pools
+    define_pool::{run_command_define_pool, DefinePoolArgs}, get_pool::{run_command_get_pool, GetPoolArgs}, grab_machine::{run_command_grab_machine, GrabMachineArgs}, list_pools::run_command_list_pools, status::run_command_status
 };
 use lxp_daemon_connector::connector::LinuxPoolConnector;
 
@@ -31,6 +31,9 @@ enum Command {
 
     #[command(about = "Grab machine from pool")]
     GrabMachine(GrabMachineArgs),
+
+    #[command(about = "Display status of pools their machines")]
+    Status,
 }
 
 fn main() -> Result<()> {
@@ -41,5 +44,6 @@ fn main() -> Result<()> {
         Command::Pools => run_command_list_pools(&mut lxp),
         Command::Pool(args) => run_command_get_pool(&mut lxp, args),
         Command::GrabMachine(args) => run_command_grab_machine(&mut lxp, args),
+        Command::Status => run_command_status(&mut lxp),
     }
 }

@@ -2,7 +2,7 @@ use std::{thread::sleep, time::Duration};
 
 use anyhow::{bail, Result};
 
-use lxp_common::{machine_handle::MachineHandle, pool_definition::PoolDefinition};
+use lxp_common::{lxp_status::LxpStatus, machine_handle::MachineHandle, pool_definition::PoolDefinition};
 
 use crate::{daemon::LinuxPoolDaemon, message::Message, serve_target::ServeTarget};
 
@@ -61,5 +61,13 @@ impl LinuxPoolConnector {
 
     pub fn release_machine(&mut self, machine: MachineHandle) -> Result<()> {
         self.daemon.send_message(&Message::ReleaseMachine(machine))
+    }
+
+    pub fn status(&mut self) -> Result<LxpStatus> {
+        match self.daemon.send_request(&Message::Status)? {
+            Message::StatusResponse(response) => Ok(response),
+            Message::Error(error) => bail!("{}", error),
+            _ => bail!("Could not get status from daemon"),
+        }
     }
 }

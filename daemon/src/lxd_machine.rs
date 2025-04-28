@@ -1,7 +1,7 @@
 use std::{process::Command, thread, time::Duration};
 
 use anyhow::{anyhow, bail, Error, Result};
-use lxp_common::machine_type::MachineType;
+use lxp_common::{lxp_status::{LxpMachineStatus, LxpUnitStatus}, machine_type::MachineType};
 
 const EXEC_MAX_RETRIES: usize = 20;
 const EXEC_TIMEOUT: Duration = Duration::from_secs(1);
@@ -134,6 +134,10 @@ impl LxdMachine {
         }
 
         Err(latest_error)
+    }
+
+    pub fn status(&self) -> LxpMachineStatus {
+        LxpMachineStatus::new(self.machine_name.clone(), LxpUnitStatus::Ready, "".to_string())
     }
 
     fn run_host_shell(&self, command: &String) -> Result<String> {

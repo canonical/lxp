@@ -1,5 +1,5 @@
 use anyhow::{anyhow, bail, Ok, Result};
-use lxp_common::{machine_handle::MachineHandle, pool_definition::PoolDefinition};
+use lxp_common::{lxp_status::LxpStatus, machine_handle::MachineHandle, pool_definition::PoolDefinition};
 use lxp_daemon_connector::{daemon::LinuxPoolDaemon, message::Message, serve_target::ServeTarget};
 use pool_service::PoolService;
 use store::{list, retrieve, store};
@@ -76,7 +76,12 @@ fn handle_client(client_daemon: &mut LinuxPoolDaemon, pool_service: &mut PoolSer
             Message::ReleaseMachine(machine) => {
                 pool_service.release_machine(&machine)?;
                 Ok(NextAction::Continue)
-            }
+            },
+            Message::Status => {
+                let status: LxpStatus = pool_service.status()?;
+                client_daemon.send_message(&Message::StatusResponse(status))?;
+                Ok(NextAction::Continue)
+            },
             Message::End => Ok(NextAction::End),
             _ => {
                 Err(anyhow!("Invalid message sent to daemon"))

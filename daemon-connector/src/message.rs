@@ -1,4 +1,4 @@
-use lxp_common::{machine_handle::MachineHandle, pool_definition::PoolDefinition};
+use lxp_common::{lxp_status::LxpStatus, machine_handle::MachineHandle, pool_definition::PoolDefinition};
 use serde::{Deserialize, Serialize};
 
 use crate::serve_target::ServeTarget;
@@ -19,6 +19,9 @@ pub enum Message {
     ExecuteCommand(MachineHandle, String),
     ExecuteCommandResponse(String),
     ReleaseMachine(MachineHandle),
+
+    Status,
+    StatusResponse(LxpStatus),
 
     Error(String),
 
